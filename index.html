@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FlipMart - India's Premier Online Shopping Destination. Multi-category electronics, fashion, home, kitchen, and books.">
+    <title>FlipMart - India's Premier Online Shopping Destination</title>
+    <!-- Modern Typography from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="brand">
+                <span class="brand-icon">🛒</span>
+                <div class="brand-text">
+                    <h1><span style="color: #ffffff;">Flip</span><span style="color: #FFE500;">Mart</span></h1>
+                    <span class="badge-sub">Explore Plus ✦</span>
+                </div>
+            </div>
+
+            <!-- Integrated Search Bar -->
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Search for products, brands and more..." autocomplete="off">
+            </div>
+
+            <!-- Category Filter Chips -->
+            <div class="category-pills" id="categoryPills">
+                <button class="pill active" data-category="ALL">🌟 All Categories</button>
+                <button class="pill" data-category="ELECTRONICS">⚡ Electronics</button>
+                <button class="pill" data-category="FASHION">👕 Fashion</button>
+                <button class="pill" data-category="HOME_KITCHEN">🍳 Home & Kitchen</button>
+                <button class="pill" data-category="BOOKS_ESSENTIALS">📚 Books & Essentials</button>
+            </div>
+
+            <!-- Live Cart Drawer Button -->
+            <div class="nav-actions">
+                <button class="cart-btn" id="openCartBtn">
+                    <span class="cart-icon">🛒</span>
+                    <span class="cart-label">Cart</span>
+                    <span class="cart-total" id="navCartTotal">₹0</span>
+                    <span class="cart-badge" id="navCartCount">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-wrapper">
+        <!-- Hero Promo Banner -->
+        <section class="promo-banner">
+            <div class="promo-content">
+                <span class="promo-tag">⚡ FLIPMART BIG SAVINGS DAYS</span>
+                <p>Unlock an <strong>instant 10% Smart Bundle Savings</strong> on companion items! Free Express Delivery over ₹1,499. Use coupon <span class="code-chip" onclick="applyPromoDirectly('SAVE15')">SAVE15</span> (15% off >₹1,000) or <span class="code-chip" onclick="applyPromoDirectly('FLAT500')">FLAT500</span> (₹500 off >₹2,500).</p>
+            </div>
+            <button class="btn-ghost" id="bannerCartTrigger">View Cart 🛒</button>
+        </section>
+
+        <!-- Product Cards Grid -->
+        <section class="catalog-section">
+            <div class="section-header">
+                <h2 id="catalogTitle">Explore FlipMart Catalog</h2>
+                <span class="catalog-counter" id="productCounter">Displaying products</span>
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                <!-- Dynamically rendered via app.js -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Status Bar -->
+    <footer class="app-footer">
+        <div class="footer-left">
+            <span>● 100% Genuine Products • 7-Day Replacement Guarantee • Free Express Delivery</span>
+            <span class="divider">|</span>
+            <span>REST API Bridge: <code style="color: #60a5fa;">http://localhost:8080/api</code></span>
+        </div>
+        <div class="footer-right">
+            <span>User: Alex Morgan (FlipMart VIP Prime) | Helpline: 1800-208-9898</span>
+        </div>
+    </footer>
+
+    <!-- LIVE CART DRAWER MODAL -->
+    <div class="drawer-backdrop" id="cartDrawerBackdrop">
+        <aside class="cart-drawer" id="cartDrawer">
+            <div class="drawer-header">
+                <div class="drawer-title">
+                    <span>🛒 FlipMart Cart</span>
+                    <span class="drawer-count" id="drawerItemCount">(0 items)</span>
+                </div>
+                <div class="drawer-header-actions">
+                    <button class="btn-text" id="clearCartBtn">Clear All</button>
+                    <button class="btn-close" id="closeCartBtn">✕</button>
+                </div>
+            </div>
+
+            <div class="drawer-body" id="drawerItemsList">
+                <!-- Dynamically rendered items -->
+            </div>
+
+            <div class="drawer-footer">
+                <!-- Promo Code Box -->
+                <div class="promo-box">
+                    <div class="promo-input-row">
+                        <input type="text" id="promoInput" placeholder="Enter coupon (e.g. SAVE15)">
+                        <button class="btn-primary" id="applyPromoBtn">Apply</button>
+                    </div>
+                    <div class="promo-tags">
+                        <span>Available:</span>
+                        <span class="chip-sm" onclick="applyPromoDirectly('SAVE15')">SAVE15</span>
+                        <span class="chip-sm" onclick="applyPromoDirectly('FLAT500')">FLAT500</span>
+                        <span class="chip-sm" onclick="applyPromoDirectly('BULK3')">BULK3</span>
+                    </div>
+                    <div class="coupon-feedback" id="couponFeedback"></div>
+                </div>
+
+                <!-- Financial Calculation Breakdown -->
+                <div class="breakdown-card">
+                    <div class="breakdown-row">
+                        <span>Subtotal</span>
+                        <span id="bdSubtotal">₹0</span>
+                    </div>
+                    <div class="breakdown-row text-success">
+                        <span>Discounts & Offers</span>
+                        <span id="bdDiscounts">-₹0</span>
+                    </div>
+                    <div class="breakdown-row">
+                        <span>Estimated Taxes (GST)</span>
+                        <span id="bdTax">₹0</span>
+                    </div>
+                    <div class="breakdown-row">
+                        <span>Fulfillment & Delivery</span>
+                        <span id="bdShipping">FREE</span>
+                    </div>
+                    <div class="breakdown-row total-row">
+                        <span>TOTAL AMOUNT</span>
+                        <span id="bdGrandTotal">₹0</span>
+                    </div>
+                </div>
+
+                <button class="btn-checkout" id="btnOpenCheckout" onclick="openCheckoutModal()">
+                    <span>Proceed to Buy</span>
+                    <span id="checkoutBtnTotal">₹0</span>
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- PRODUCT QUICK VIEW MODAL -->
+    <div class="modal-backdrop" id="quickViewBackdrop">
+        <div class="modal-card qv-card">
+            <button class="modal-close" onclick="closeModal('quickViewBackdrop')">✕</button>
+            <div class="qv-grid">
+                <div class="qv-image-side">
+                    <img id="qvImage" src="" alt="Product Detail">
+                    <span class="qv-stock-tag" id="qvStockBadge">In Stock</span>
+                </div>
+                <div class="qv-info-side">
+                    <span class="badge badge-cat" id="qvCategory">Category</span>
+                    <h2 id="qvTitle">Product Title</h2>
+                    <div class="qv-rating" id="qvRating">⭐ 4.8</div>
+                    <p class="qv-desc" id="qvDesc">Description text goes here...</p>
+
+                    <!-- Technical Specifications Table -->
+                    <div class="qv-specs-box">
+                        <div class="qv-specs-header">PRODUCT SPECIFICATIONS & FEATURES:</div>
+                        <div id="qvSpecsHtml"></div>
+                    </div>
+
+                    <div class="qv-price-row">
+                        <span class="qv-price" id="qvPrice">₹0</span>
+                    </div>
+
+                    <div class="qv-actions">
+                        <button class="btn-primary" id="qvAddToCartBtn">Add to Cart 🛒</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DYNAMIC SMART BUNDLE RECOMMENDATION MODAL -->
+    <div class="modal-backdrop" id="bundleModalBackdrop">
+        <div class="modal-card bundle-card">
+            <div class="bundle-badge">⚡ SMART BUNDLE OFFER • EXTRA 10% SAVINGS</div>
+            <h3>Frequently Bought Together</h3>
+            <p class="bundle-subtitle" id="bundleModalSubtitle">Customers who added this item also loved this companion:</p>
+
+            <div class="bundle-product-box">
+                <img id="bundleImg" src="" alt="Recommended Product">
+                <div class="bundle-meta">
+                    <h4 id="bundleName">Recommended Item Name</h4>
+                    <div class="bundle-price-compare">
+                        <span class="bundle-old-price" id="bundleOldPrice">₹0</span>
+                        <span class="bundle-new-price" id="bundleNewPrice">₹0</span>
+                    </div>
+                    <span class="bundle-savings-pill" id="bundleSavings">Save ₹0 (10% off)</span>
+                </div>
+            </div>
+
+            <div class="bundle-actions">
+                <button class="btn-secondary" id="btnDismissBundle">No thanks, just my item</button>
+                <button class="btn-success" id="btnAddBundle">Add Bundle to Cart 🎁</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div class="modal-backdrop" id="checkoutBackdrop">
+        <div class="modal-card checkout-card">
+            <!-- Modal Header with Brand & Security Badge -->
+            <div class="checkout-header">
+                <div class="co-header-brand">
+                    <div class="co-shield-icon">🛡️</div>
+                    <div>
+                        <div class="co-header-title">FlipMart Secure Express Checkout</div>
+                        <div class="co-header-subtitle">256-Bit SSL Bank-Grade Encryption • RBI & NPCI Compliant</div>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeModal('checkoutBackdrop')" title="Close Checkout">✕</button>
+            </div>
+
+            <!-- Checkout Steps Indicator -->
+            <div class="co-steps-bar">
+                <div class="step-item completed">
+                    <span class="step-circle">✓</span>
+                    <span class="step-label">Cart</span>
+                </div>
+                <div class="step-line active"></div>
+                <div class="step-item active">
+                    <span class="step-circle">2</span>
+                    <span class="step-label">Delivery & Payment</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step-item">
+                    <span class="step-circle">3</span>
+                    <span class="step-label">Confirmation</span>
+                </div>
+            </div>
+
+            <div class="checkout-grid">
+                <!-- Forms Side -->
+                <div class="checkout-forms">
+                    <!-- Customer Details -->
+                    <div class="form-section">
+                        <div class="section-title-row">
+                            <h4>1. Delivery Address & Customer Details</h4>
+                            <span class="badge-prime-express">⚡ Prime Next-Day Delivery</span>
+                        </div>
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label for="custName"><span class="form-icon">👤</span> Full Name</label>
+                                <input type="text" id="custName" value="Alex Morgan" placeholder="e.g. Alex Morgan">
+                            </div>
+                            <div class="form-group">
+                                <label for="custEmail"><span class="form-icon">✉️</span> Email Address</label>
+                                <input type="email" id="custEmail" value="alex.morgan@techcorp.in" placeholder="e.g. alex@example.com">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="custAddress"><span class="form-icon">📍</span> Shipping Address & Pincode</label>
+                            <input type="text" id="custAddress" value="Flat 402, Prestige Towers, Indiranagar, Bengaluru, KA - 560038" placeholder="Street, Building, City, State, Pincode">
+                        </div>
+                        <div class="delivery-eta-box">
+                            <span class="eta-icon">🚚</span>
+                            <span>Guaranteed Delivery by <strong>Tomorrow, 11:00 AM</strong> with FlipMart Express Courier</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Option Tabs -->
+                    <div class="form-section">
+                        <div class="section-title-row">
+                            <h4>2. Choose Payment Method</h4>
+                            <span class="badge-secure-pay">🔒 100% Secure</span>
+                        </div>
+                        <div class="payment-tabs">
+                            <button class="pay-tab active" data-method="CC" id="tabCC" type="button">
+                                <span class="tab-icon">💳</span>
+                                <div class="tab-text">
+                                    <span class="tab-title">Credit / Debit Card</span>
+                                    <span class="tab-sub">Visa, RuPay, Master</span>
+                                </div>
+                            </button>
+                            <button class="pay-tab" data-method="UPI" id="tabUPI" type="button">
+                                <span class="tab-icon">📱</span>
+                                <div class="tab-text">
+                                    <span class="tab-title">UPI Instant</span>
+                                    <span class="tab-sub">GPay, PhonePe, Paytm</span>
+                                </div>
+                            </button>
+                            <button class="pay-tab" data-method="CRYPTO" id="tabCRYPTO" type="button">
+                                <span class="tab-icon">🏦</span>
+                                <div class="tab-text">
+                                    <span class="tab-title">Net Banking / Web3</span>
+                                    <span class="tab-sub">Top Banks & Crypto</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        <!-- Credit Card Panel with Live Virtual Card Preview -->
+                        <div class="pay-form active" id="formCC">
+                            <!-- Virtual Holographic Card Preview -->
+                            <div class="virtual-card-wrapper">
+                                <div class="virtual-card">
+                                    <div class="vc-glow"></div>
+                                    <div class="vc-header">
+                                        <div class="vc-chip"></div>
+                                        <div class="vc-brand" id="vcBrandLogo">RuPay</div>
+                                    </div>
+                                    <div class="vc-number" id="vcNumberDisplay">4532  8901  2345  6789</div>
+                                    <div class="vc-footer">
+                                        <div class="vc-holder">
+                                            <span class="vc-lbl">CARDHOLDER</span>
+                                            <span class="vc-val" id="vcHolderDisplay">ALEX MORGAN</span>
+                                        </div>
+                                        <div class="vc-expiry">
+                                            <span class="vc-lbl">VALID THRU</span>
+                                            <span class="vc-val" id="vcExpiryDisplay">12/28</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label for="ccHolder">Name on Card</label>
+                                    <input type="text" id="ccHolder" value="Alex Morgan" placeholder="e.g. Alex Morgan" autocomplete="cc-name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ccNumber">Card Number (16 Digits)</label>
+                                    <input type="text" id="ccNumber" value="4532890123456789" placeholder="16-digit card number" maxlength="19" autocomplete="cc-number">
+                                </div>
+                            </div>
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label for="ccExpiry">Expiration (MM/YY)</label>
+                                    <input type="text" id="ccExpiry" value="12/28" placeholder="MM/YY" maxlength="5" autocomplete="cc-exp">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ccCvv">CVV / Security Code</label>
+                                    <input type="password" id="ccCvv" value="842" maxlength="4" placeholder="3 or 4 digits" autocomplete="cc-csc">
+                                </div>
+                            </div>
+                            <div class="card-security-note">
+                                <span>🔒 256-Bit TLS Secured • Your card details are never stored on our servers</span>
+                            </div>
+                        </div>
+
+                        <!-- UPI Panel with Quick App Selectors -->
+                        <div class="pay-form" id="formUPI">
+                            <div class="upi-apps-row">
+                                <span class="upi-apps-title">Instant App Launch:</span>
+                                <div class="upi-chips-grid">
+                                    <button class="upi-chip" type="button" onclick="setUpiHandle('@okhdfcbank')">⚡ Google Pay</button>
+                                    <button class="upi-chip" type="button" onclick="setUpiHandle('@ybl')">🟣 PhonePe</button>
+                                    <button class="upi-chip" type="button" onclick="setUpiHandle('@paytm')">🔵 Paytm</button>
+                                    <button class="upi-chip" type="button" onclick="setUpiHandle('@upi')">🇮🇳 BHIM UPI</button>
+                                    <button class="upi-chip" type="button" onclick="setUpiHandle('@cred')">💳 CRED</button>
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-top: 14px;">
+                                <label for="upiId"><span class="form-icon">📱</span> UPI ID / Virtual Payment Address (VPA)</label>
+                                <input type="text" id="upiId" value="alexmorgan@okaxis" placeholder="yourname@bank or 9876543210@upi">
+                                <span class="help-text">Instant collect request will be sent to your UPI app for 1-click authorization.</span>
+                            </div>
+                            <div class="upi-verified-badge">
+                                <span class="tick-icon">✓</span>
+                                <span>Zero convenience fee • Supported by National Payments Corporation of India (NPCI)</span>
+                            </div>
+                        </div>
+
+                        <!-- Net Banking / Web3 Panel -->
+                        <div class="pay-form" id="formCRYPTO">
+                            <div class="popular-banks-section">
+                                <span class="popular-banks-title">Popular Indian Banks:</span>
+                                <div class="bank-chips-grid">
+                                    <button class="bank-chip active" type="button" onclick="selectBank(this, 'HDFC Bank')">🏛️ HDFC Bank</button>
+                                    <button class="bank-chip" type="button" onclick="selectBank(this, 'ICICI Bank')">🏛️ ICICI Bank</button>
+                                    <button class="bank-chip" type="button" onclick="selectBank(this, 'SBI')">🏛️ SBI</button>
+                                    <button class="bank-chip" type="button" onclick="selectBank(this, 'Axis Bank')">🏛️ Axis Bank</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 14px;">
+                                <label for="cryptoNetwork">Web3 / Blockchain Settlement Network</label>
+                                <select id="cryptoNetwork">
+                                    <option value="Ethereum">Ethereum (ETH - ERC20) [0x Gas Optimized]</option>
+                                    <option value="Bitcoin">Bitcoin (BTC - SegWit Lightning)</option>
+                                    <option value="Solana">Solana (SOL - SPL High Speed)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="cryptoWallet">Payer Web3 Wallet Address</label>
+                                <input type="text" id="cryptoWallet" value="0x71C8F4a59E92d6e491c32c4Fa1E6E562A43B11A9" placeholder="0x... or Solana pubkey">
+                                <span class="help-text">Smart contract automated escrow settlement upon block finality.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="checkout-error" id="checkoutError"></div>
+                </div>
+
+                <!-- Mini Order Summary Sidebar -->
+                <div class="checkout-summary-sidebar">
+                    <div class="co-sidebar-header">
+                        <h4>Order Summary</h4>
+                        <span class="co-item-badge" id="coSidebarCount">Items</span>
+                    </div>
+
+                    <div class="co-items-list" id="checkoutItemsList">
+                        <!-- Injected items -->
+                    </div>
+
+                    <div class="co-summary-divider"></div>
+
+                    <div class="co-breakdown-table">
+                        <div class="co-row">
+                            <span class="co-row-lbl">Items Subtotal:</span>
+                            <span class="co-row-val" id="coSubtotal">₹0</span>
+                        </div>
+                        <div class="co-row text-success">
+                            <span class="co-row-lbl">Special Discounts:</span>
+                            <span class="co-row-val" id="coDiscounts">-₹0</span>
+                        </div>
+                        <div class="co-row">
+                            <span class="co-row-lbl">Estimated GST:</span>
+                            <span class="co-row-val" id="coTax">₹0</span>
+                        </div>
+                        <div class="co-row">
+                            <span class="co-row-lbl">Delivery Charges:</span>
+                            <span class="co-free-pill" id="coShipping">FREE</span>
+                        </div>
+                    </div>
+
+                    <div class="co-summary-divider"></div>
+
+                    <div class="co-total-box">
+                        <div>
+                            <span class="co-total-title">TOTAL AMOUNT</span>
+                            <span class="co-total-subtitle">Inclusive of all taxes</span>
+                        </div>
+                        <span class="co-total-val" id="coGrand">₹0</span>
+                    </div>
+
+                    <!-- Confirm & Pay Action Button -->
+                    <button class="btn-checkout-confirm" id="btnSubmitOrder" onclick="handleOrderSubmission()" type="button">
+                        <span class="btn-lock-icon">🔒</span>
+                        <span class="btn-text-content">Confirm & Pay</span>
+                        <span class="btn-arrow-icon">➔</span>
+                    </button>
+
+                    <!-- Trust Strip -->
+                    <div class="co-trust-strip">
+                        <div class="trust-item">
+                            <span class="trust-icon">🛡️</span>
+                            <span>100% Buyer Protection</span>
+                        </div>
+                        <div class="trust-item">
+                            <span class="trust-icon">🔄</span>
+                            <span>7-Day Return Guarantee</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GST TAX INVOICE & RECEIPT MODAL -->
+    <div class="modal-backdrop" id="receiptBackdrop">
+        <div class="modal-card receipt-card">
+            <div class="receipt-header">
+                <span class="receipt-celebrate-icon">✅</span>
+                <h2>Payment Confirmed & Order Placed!</h2>
+                <p id="receiptSubText">Order Ref: ORD-XXXX • Paid via Credit Card</p>
+            </div>
+
+            <div class="receipt-body">
+                <pre id="receiptContent">Generating official tax invoice...</pre>
+            </div>
+
+            <div class="receipt-actions">
+                <button class="btn-secondary" onclick="copyReceiptText()">📋 Copy Invoice</button>
+                <button class="btn-secondary" onclick="downloadReceiptFile()">💾 Download Invoice (.txt)</button>
+                <button class="btn-primary" onclick="closeModal('receiptBackdrop')">Continue Shopping 🛍️</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
