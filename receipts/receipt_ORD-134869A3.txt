@@ -1,0 +1,32 @@
+========================================================================
+                      FLIPMART INDIA RETAIL PVT LTD                     
+                   OFFICIAL GST TAX INVOICE & RECEIPT                   
+========================================================================
+ GSTIN        : 29AABCF1234F1Z9 (Karnataka Hub)
+ Order ID     : ORD-134869A3
+ Order Date   : Oct 20, 2026 11:46:03
+ Order Status : CONFIRMED & PROCESSING
+------------------------------------------------------------------------
+ CUSTOMER DETAILS:
+ Name         : Alex Morgan (VIP Prime Member)
+ Email        : alex.morgan@techcorp.in
+ Shipping To  : Flat 402, Prestige Towers, Indiranagar, Bengaluru, KA - 560038
+------------------------------------------------------------------------
+ SKU        ITEM DESCRIPTION             QTY   UNIT PRICE   TOTAL       
+------------------------------------------------------------------------
+ ELEC-01    Wireless Noise-Cancellin...  1     ₹24,999      ₹24,999     
+------------------------------------------------------------------------
+ Subtotal                                         : ₹24,999
+ Estimated GST (Itemized Category Tax)            : ₹4,499.82
+ Fulfillment & Express Delivery                   : FREE
+========================================================================
+ TOTAL AMOUNT PAID                                : ₹29,498.82 INR
+========================================================================
+ PAYMENT VERIFICATION:
+ Payment Gateway  : Cryptocurrency (BTC / ETH / SOL)
+ Transaction Ref  : 0xda199c8db3c845d1bd0c453655ecc8e968cab021-6546-42
+ Settlement Status: AUTHORIZED & CLEARED VIA SECURE GATEWAY
+========================================================================
+     Thank you for shopping with FlipMart! 100% Genuine Products.       
+        Support: support@flipmart.in | Helpline: 1800-208-9898          
+========================================================================

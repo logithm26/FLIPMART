@@ -1,0 +1,32 @@
+========================================================================
+                      FLIPMART INDIA RETAIL PVT LTD                     
+                   OFFICIAL GST TAX INVOICE & RECEIPT                   
+========================================================================
+ GSTIN        : 29AABCF1234F1Z9 (Karnataka Hub)
+ Order ID     : ORD-5B5AAF66
+ Order Date   : Oct 22, 2026 19:37:54
+ Order Status : CONFIRMED & PROCESSING
+------------------------------------------------------------------------
+ CUSTOMER DETAILS:
+ Name         : Alex Morgan (VIP Prime Member)
+ Email        : alex.morgan@techcorp.in
+ Shipping To  : Flat 402, Prestige Towers, Indiranagar, Bengaluru, KA - 560038
+------------------------------------------------------------------------
+ SKU        ITEM DESCRIPTION             QTY   UNIT PRICE   TOTAL       
+------------------------------------------------------------------------
+ ELEC-03    4K Gaming Monitor 34" Cu...  1     ₹49,999      ₹49,999     
+------------------------------------------------------------------------
+ Subtotal                                         : ₹49,999
+ Estimated GST (Itemized Category Tax)            : ₹8,999.82
+ Fulfillment & Express Delivery                   : FREE
+========================================================================
+ TOTAL AMOUNT PAID                                : ₹58,998.82 INR
+========================================================================
+ PAYMENT VERIFICATION:
+ Payment Gateway  : Unified Payments Interface (UPI)
+ Transaction Ref  : UPI-NPCI-96894111
+ Settlement Status: AUTHORIZED & CLEARED VIA SECURE GATEWAY
+========================================================================
+     Thank you for shopping with FlipMart! 100% Genuine Products.       
+        Support: support@flipmart.in | Helpline: 1800-208-9898          
+========================================================================

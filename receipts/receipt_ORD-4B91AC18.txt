@@ -1,0 +1,36 @@
+========================================================================
+                      FLIPMART INDIA RETAIL PVT LTD                     
+                   OFFICIAL GST TAX INVOICE & RECEIPT                   
+========================================================================
+ GSTIN        : 29AABCF1234F1Z9 (Karnataka Hub)
+ Order ID     : ORD-4B91AC18
+ Order Date   : Oct 20, 2026 12:10:16
+ Order Status : CONFIRMED & PROCESSING
+------------------------------------------------------------------------
+ CUSTOMER DETAILS:
+ Name         : Alex Morgan (VIP Prime Member)
+ Email        : alex.morgan@techcorp.in
+ Shipping To  : Flat 402, Prestige Towers, Indiranagar, Bengaluru, KA - 560038
+------------------------------------------------------------------------
+ SKU        ITEM DESCRIPTION             QTY   UNIT PRICE   TOTAL       
+------------------------------------------------------------------------
+ ELEC-03    4K Gaming Monitor 34" Cu...  1     ₹49,999      ₹49,999     
+ ELEC-02    Apex Pro Mechanical Keyb...  2     ₹8,499       ₹15,298.20  
+            ↳ Bundle Deal (10% Off - Saved ₹1,699.80)
+ BOOK-03    Multi-port 140W GaN Fast...  1     ₹3,999       ₹3,999      
+------------------------------------------------------------------------
+ Subtotal                                         : ₹70,996
+ Discounts & Offers Applied                       : -₹1,699.80 (Bundle & Volume Deals)
+ Estimated GST (Itemized Category Tax)            : ₹11,953.45
+ Fulfillment & Express Delivery                   : FREE
+========================================================================
+ TOTAL AMOUNT PAID                                : ₹81,249.65 INR
+========================================================================
+ PAYMENT VERIFICATION:
+ Payment Gateway  : Credit / Debit Card
+ Transaction Ref  : TXN-CC-39DC131E
+ Settlement Status: AUTHORIZED & CLEARED VIA SECURE GATEWAY
+========================================================================
+     Thank you for shopping with FlipMart! 100% Genuine Products.       
+        Support: support@flipmart.in | Helpline: 1800-208-9898          
+========================================================================

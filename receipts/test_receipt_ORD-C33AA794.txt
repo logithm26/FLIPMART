@@ -1,0 +1,35 @@
+========================================================================
+                      FLIPMART INDIA RETAIL PVT LTD                     
+                   OFFICIAL GST TAX INVOICE & RECEIPT                   
+========================================================================
+ GSTIN        : 29AABCF1234F1Z9 (Karnataka Hub)
+ Order ID     : ORD-C33AA794
+ Order Date   : Oct 22, 2026 19:20:59
+ Order Status : CONFIRMED & PROCESSING
+------------------------------------------------------------------------
+ CUSTOMER DETAILS:
+ Name         : Priya Sharma (VIP Diamond)
+ Email        : priya.sharma@tech.in
+ Shipping To  : 104 MG Road, Bengaluru, Karnataka
+------------------------------------------------------------------------
+ SKU        ITEM DESCRIPTION             QTY   UNIT PRICE   TOTAL       
+------------------------------------------------------------------------
+ ELEC-01    Wireless Noise-Cancellin...  1     ₹24,999      ₹24,999     
+ BOOK-03    Multi-port 140W GaN Fast...  1     ₹3,999       ₹3,599.10   
+            ↳ Bundle Deal (10% Off - Saved ₹399.90)
+------------------------------------------------------------------------
+ Subtotal                                         : ₹28,998
+ Discounts & Offers Applied                       : -₹399.90 (Bundle & Volume Deals)
+ Estimated GST (Itemized Category Tax)            : ₹4,679.77
+ Fulfillment & Express Delivery                   : FREE
+========================================================================
+ TOTAL AMOUNT PAID                                : ₹33,277.88 INR
+========================================================================
+ PAYMENT VERIFICATION:
+ Payment Gateway  : Credit / Debit Card
+ Transaction Ref  : TXN-CC-A88B3DB9
+ Settlement Status: AUTHORIZED & CLEARED VIA SECURE GATEWAY
+========================================================================
+     Thank you for shopping with FlipMart! 100% Genuine Products.       
+        Support: support@flipmart.in | Helpline: 1800-208-9898          
+========================================================================

@@ -1,0 +1,31 @@
+========================================================================
+                       ONLINE SHOPPING CART STORE                       
+                     OFFICIAL ORDER & TAX INVOICE                       
+========================================================================
+ Order ID     : ORD-43BA2C75
+ Date & Time  : Oct 20, 2026 09:20:34
+ Status       : CONFIRMED & PROCESSING
+------------------------------------------------------------------------
+ CUSTOMER DETAILS:
+ Name         : Alex Morgan (VIP Prime Member)
+ Email        : alex.morgan@techcorp.io
+ Shipping To  : 742 Evergreen Terrace, Springfield, OR
+------------------------------------------------------------------------
+ SKU        ITEM DESCRIPTION             QTY    UNIT PRICE  TOTAL     
+------------------------------------------------------------------------
+ CLOTH-02   Urban Nomad Tactical Jog...  1      $65.00      $65.00    
+------------------------------------------------------------------------
+ Subtotal                                         : $65.00
+ Estimated Taxes (Category GST/VAT)               : $3.25
+ Fulfillment & Express Shipping                   : $4.99
+========================================================================
+ TOTAL AMOUNT PAID                                : $73.24 USD
+========================================================================
+ PAYMENT VERIFICATION:
+ Gateway Method   : Credit / Debit Card
+ Transaction Ref  : TXN-CC-A30FF33A
+ Settlement Status: AUTHORIZED & CLEARED
+========================================================================
+           Thank you for shopping with us! Keep this receipt.           
+              Support: support@onlineshoppingcart.com                   
+========================================================================

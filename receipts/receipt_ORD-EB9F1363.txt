@@ -1,0 +1,35 @@
+========================================================================
+                       ONLINE SHOPPING CART STORE                       
+                     OFFICIAL ORDER & TAX INVOICE                       
+========================================================================
+ Order ID     : ORD-EB9F1363
+ Date & Time  : Oct 17, 2026 16:58:03
+ Status       : CONFIRMED & PROCESSING
+------------------------------------------------------------------------
+ CUSTOMER DETAILS:
+ Name         : Alex Morgan (VIP Prime Member)
+ Email        : alex.morgan@techcorp.io
+ Shipping To  : 742 Evergreen Terrace, Springfield, OR
+------------------------------------------------------------------------
+ SKU        ITEM DESCRIPTION             QTY    UNIT PRICE  TOTAL     
+------------------------------------------------------------------------
+ ELEC-01    AuraSound Max ANC Headph...  1      $279.99     $279.99   
+ ELEC-02    Apex Pro Mechanical Keyb...  1      $169.50     $169.50   
+ DIGI-01    DevMaster Cloud IDE Suite    1      $149.00     $134.10   
+            ↳ Bundle Deal (10% Off Applied - Saved $14.90)
+------------------------------------------------------------------------
+ Subtotal                                         : $598.49
+ Total Discounts Applied                          : -$14.90 (Bundle & Volume Deals)
+ Estimated Taxes (Category GST/VAT)               : $94.32
+ Fulfillment & Express Shipping                   : FREE ($0.00)
+========================================================================
+ TOTAL AMOUNT PAID                                : $677.91 USD
+========================================================================
+ PAYMENT VERIFICATION:
+ Gateway Method   : Credit / Debit Card
+ Transaction Ref  : TXN-CC-BF37A749
+ Settlement Status: AUTHORIZED & CLEARED
+========================================================================
+           Thank you for shopping with us! Keep this receipt.           
+              Support: support@onlineshoppingcart.com                   
+========================================================================

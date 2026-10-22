@@ -1,0 +1,34 @@
+========================================================================
+                       ONLINE SHOPPING CART STORE                       
+                     OFFICIAL ORDER & TAX INVOICE                       
+========================================================================
+ Order ID     : ORD-DB42ABA7
+ Date & Time  : Oct 17, 2026 16:47:59
+ Status       : CONFIRMED & PROCESSING
+------------------------------------------------------------------------
+ CUSTOMER DETAILS:
+ Name         : Sarah Connor (VIP Diamond)
+ Email        : sarah@cyberdyne.org
+ Shipping To  : 42 Skynet Blvd, Los Angeles, CA
+------------------------------------------------------------------------
+ SKU        ITEM DESCRIPTION             QTY    UNIT PRICE  TOTAL     
+------------------------------------------------------------------------
+ ELEC-01    AuraSound Max ANC Headph...  1      $279.99     $279.99   
+ DIGI-01    DevMaster Cloud IDE Suite    1      $149.00     $134.10   
+            ↳ Bundle Deal (10% Off Applied - Saved $14.90)
+------------------------------------------------------------------------
+ Subtotal                                         : $428.99
+ Total Discounts Applied                          : -$14.90 (Bundle & Volume Deals)
+ Estimated Taxes (Category GST/VAT)               : $63.81
+ Fulfillment & Express Shipping                   : FREE ($0.00)
+========================================================================
+ TOTAL AMOUNT PAID                                : $477.90 USD
+========================================================================
+ PAYMENT VERIFICATION:
+ Gateway Method   : Credit / Debit Card
+ Transaction Ref  : TXN-CC-5C36B9C9
+ Settlement Status: AUTHORIZED & CLEARED
+========================================================================
+           Thank you for shopping with us! Keep this receipt.           
+              Support: support@onlineshoppingcart.com                   
+========================================================================
