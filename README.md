@@ -98,3 +98,46 @@ Runs tests verifying real-world CDN URLs, AsyncImageLoader skeleton placeholders
 javac -d bin -sourcepath src src/com/shoppingcart/test/CatalogAndAsyncImageTest.java
 java -ea -cp bin com.shoppingcart.test.CatalogAndAsyncImageTest
 ```
+
+---
+
+## 🌐 FlipMart Web Store & GitHub Pages Deployment
+
+### 1. Launch Web Store & REST API Locally
+To start the built-in HTTP Web Server on `http://localhost:8080`:
+```bash
+run_web.bat
+```
+Or manually:
+```bash
+javac -d bin -sourcepath src src/com/shoppingcart/web/WebServer.java
+java -cp bin com.shoppingcart.web.WebServer
+```
+Then visit [http://localhost:8080](http://localhost:8080) in your browser.
+
+---
+
+### 2. Live GitHub Pages Deployment Guide
+
+**Live Store URL:** [https://logithm26.github.io/FLIPMART/](https://logithm26.github.io/FLIPMART/)
+
+Follow these 3 simple steps to activate and deploy GitHub Pages:
+
+#### Step 1: Setting (Configure GitHub Pages Source)
+1. Go to your repository settings: [https://github.com/logithm26/FLIPMART/settings/pages](https://github.com/logithm26/FLIPMART/settings/pages)
+2. Under **"Build and deployment"** > **"Source"**, change from *"Deploy from a branch"* to **"GitHub Actions"**.
+
+#### Step 2: Action (Run GitHub Actions Pipeline)
+1. Navigate to the Actions tab: [https://github.com/logithm26/FLIPMART/actions](https://github.com/logithm26/FLIPMART/actions)
+2. The workflow **"Build and Deploy FlipMart"** will automatically trigger on your push to `main`.
+3. You can also trigger it manually anytime by selecting **"Build and Deploy FlipMart"** > click **"Run workflow"** > branch `main`.
+4. The pipeline performs:
+   - 🔨 Compiles Java codebase & runs verification test suites
+   - 🚀 Probes REST API integration endpoints
+   - 📦 Packages standalone `FlipMart.jar`
+   - 🌐 Snapshots API data & publishes web store to GitHub Pages
+
+#### Step 3: Page (Enjoy the Live Store!)
+Once the workflow status turns green (✅):
+- Visit [https://logithm26.github.io/FLIPMART/](https://logithm26.github.io/FLIPMART/) to experience the fully interactive Flipkart-inspired web store live on the web!
+

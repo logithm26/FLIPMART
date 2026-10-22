@@ -1,11 +1,283 @@
 // FlipMart Web Store Application Logic
-const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8080/api' : '/api';
+// Smart URL & Asset Resolver for Local Server, file://, and GitHub Pages (e.g., https://logithm26.github.io/FLIPMART/)
+function getRepoBaseUrl() {
+    if (window.location.protocol === 'file:') {
+        return 'http://localhost:8080/';
+    }
+    const origin = window.location.origin;
+    let pathname = window.location.pathname;
+    if (pathname.includes('.')) {
+        pathname = pathname.substring(0, pathname.lastIndexOf('/') + 1);
+    } else if (!pathname.endsWith('/')) {
+        pathname += '/';
+    }
+    return origin + pathname;
+}
+
+const REPO_BASE = getRepoBaseUrl();
+const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8080/api' : (REPO_BASE + 'api');
+
 let allProducts = [];
 let currentCategory = 'ALL';
 let currentSearch = '';
 let activeBundleRecommendation = null;
 let activePaymentMethod = 'CC';
 let lastConfirmedReceipt = '';
+
+// --- LOCAL CART ENGINE FOR GITHUB PAGES (STATIC MODE & RESILIENT FALLBACK) ---
+const LocalCartEngine = {
+    getItems() {
+        try {
+            return JSON.parse(localStorage.getItem('flipmart_cart_items') || '[]');
+        } catch (_) {
+            return [];
+        }
+    },
+    saveItems(items) {
+        localStorage.setItem('flipmart_cart_items', JSON.stringify(items));
+    },
+    getCoupon() {
+        return localStorage.getItem('flipmart_cart_coupon') || null;
+    },
+    saveCoupon(code) {
+        if (code) localStorage.setItem('flipmart_cart_coupon', code);
+        else localStorage.removeItem('flipmart_cart_coupon');
+    },
+    addItem(productId, quantity = 1, isBundle = false) {
+        const product = allProducts.find(p => p.id === productId);
+        if (!product) return { success: false, message: 'Product not found' };
+        const items = this.getItems();
+        const existing = items.find(it => it.productId === productId);
+        if (existing) {
+            existing.quantity += quantity;
+            if (isBundle) existing.isBundle = true;
+        } else {
+            items.push({
+                productId: product.id,
+                name: product.name,
+                category: product.category,
+                imagePath: product.imagePath,
+                basePrice: product.basePrice,
+                quantity: quantity,
+                isBundle: isBundle,
+                bundlePartnerId: product.bundlePartnerId
+            });
+        }
+        this.saveItems(items);
+
+        let bundleRecommendation = null;
+        if (!isBundle && product.bundlePartnerId) {
+            const partner = allProducts.find(p => p.id === product.bundlePartnerId);
+            if (partner) {
+                bundleRecommendation = {
+                    baseName: product.name,
+                    recommendedId: partner.id,
+                    recommendedName: partner.name,
+                    recommendedCategory: partner.category,
+                    recommendedImage: partner.imagePath,
+                    originalPrice: partner.basePrice,
+                    discountedPrice: partner.basePrice * 0.90,
+                    savings: partner.basePrice * 0.10
+                };
+            }
+        }
+        return { success: true, bundleRecommendation };
+    },
+    updateQuantity(productId, action) {
+        const items = this.getItems();
+        const existing = items.find(it => it.productId === productId);
+        if (!existing) return { success: false };
+        if (action === 'increment') {
+            const p = allProducts.find(item => item.id === productId);
+            if (p && existing.quantity >= (p.stockQuantity || 99)) {
+                return { success: false, message: 'Stock limit reached' };
+            }
+            existing.quantity++;
+        } else if (action === 'decrement') {
+            existing.quantity--;
+            if (existing.quantity <= 0) {
+                return this.removeItem(productId);
+            }
+        }
+        this.saveItems(items);
+        return { success: true };
+    },
+    removeItem(productId) {
+        let items = this.getItems();
+        items = items.filter(it => it.productId !== productId);
+        this.saveItems(items);
+        return { success: true };
+    },
+    clear() {
+        this.saveItems([]);
+        this.saveCoupon(null);
+    },
+    applyCoupon(code) {
+        if (!code) return { success: false, message: 'Please enter a coupon code' };
+        const clean = code.trim().toUpperCase();
+        const cart = this.getCartState();
+        if (clean === 'SAVE15') {
+            if (cart.breakdown.subtotal < 1000) return { success: false, message: 'Minimum order ₹1,000 required for SAVE15' };
+            this.saveCoupon(clean);
+            return { success: true };
+        } else if (clean === 'FLAT500' || clean === 'FLAT25') {
+            if (cart.breakdown.subtotal < 2000) return { success: false, message: 'Minimum order ₹2,000 required for FLAT500' };
+            this.saveCoupon(clean);
+            return { success: true };
+        } else if (clean === 'BULK3') {
+            if (cart.totalItems < 3) return { success: false, message: 'Minimum 3 items required for BULK3' };
+            this.saveCoupon(clean);
+            return { success: true };
+        } else {
+            return { success: false, message: `Invalid promo code "${clean}". Try SAVE15, FLAT500, or BULK3.` };
+        }
+    },
+    removeCoupon() {
+        this.saveCoupon(null);
+    },
+    getCartState() {
+        const rawItems = this.getItems();
+        let totalItems = 0;
+        let subtotal = 0;
+        let bundleSavings = 0;
+        let taxTotal = 0;
+        let shippingTotal = 0;
+        let hasPhysical = false;
+
+        const items = rawItems.map(it => {
+            const p = allProducts.find(prod => prod.id === it.productId) || it;
+            const lineSub = p.basePrice * it.quantity;
+            const lineBundleDiscount = it.isBundle ? (lineSub * 0.10) : 0;
+            const lineTotal = lineSub - lineBundleDiscount;
+
+            subtotal += lineSub;
+            bundleSavings += lineBundleDiscount;
+            totalItems += it.quantity;
+
+            // Category GST Rate
+            let taxRate = 0.18;
+            if (p.category === 'BOOKS_ESSENTIALS') taxRate = 0.05;
+            else if (p.category === 'FASHION') taxRate = 0.12;
+            else if (p.category === 'DIGITAL') taxRate = 0.10;
+            taxTotal += lineTotal * taxRate;
+
+            // Shipping
+            if (p.category !== 'DIGITAL') {
+                hasPhysical = true;
+                shippingTotal += 99 * Math.min(it.quantity, 3);
+            }
+
+            return {
+                productId: p.id,
+                name: p.name,
+                category: p.category,
+                imagePath: p.imagePath,
+                basePrice: p.basePrice,
+                quantity: it.quantity,
+                lineTotal: lineTotal,
+                hasBundleDiscount: !!it.isBundle,
+                bundleDiscountAmount: lineBundleDiscount
+            };
+        });
+
+        if (!hasPhysical || subtotal >= 1499) {
+            shippingTotal = 0;
+        }
+
+        // Coupon calculation
+        let couponDiscount = 0;
+        const coupon = this.getCoupon();
+        if (coupon) {
+            const effectiveSub = subtotal - bundleSavings;
+            if (coupon === 'SAVE15' && subtotal >= 1000) {
+                couponDiscount = effectiveSub * 0.15;
+            } else if ((coupon === 'FLAT500' || coupon === 'FLAT25') && subtotal >= 2000) {
+                couponDiscount = 500;
+            } else if (coupon === 'BULK3' && totalItems >= 3) {
+                couponDiscount = effectiveSub * 0.12;
+            } else {
+                this.saveCoupon(null);
+            }
+        }
+
+        const totalDiscount = bundleSavings + couponDiscount;
+        const grandTotal = Math.max(0, subtotal - totalDiscount) + taxTotal + shippingTotal;
+
+        return {
+            items,
+            totalItems,
+            appliedCoupon: this.getCoupon(),
+            breakdown: {
+                subtotal,
+                bundleSavings,
+                couponDiscount,
+                totalDiscount,
+                taxTotal,
+                shippingTotal,
+                grandTotal,
+                appliedCoupon: this.getCoupon()
+            }
+        };
+    },
+    checkout(payload) {
+        const cart = this.getCartState();
+        if (cart.items.length === 0) return { success: false, message: 'Cart is empty' };
+        const orderId = 'ORD-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+        const dateStr = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+        let receiptText = "========================================================================\n" +
+            "                      FLIPMART INDIA RETAIL PVT LTD                     \n" +
+            "                   OFFICIAL GST TAX INVOICE & RECEIPT                   \n" +
+            "========================================================================\n" +
+            " GSTIN        : 29AABCF1234F1Z9 (Karnataka Hub)\n" +
+            ` Order ID     : ${orderId}\n` +
+            ` Order Date   : ${dateStr}\n` +
+            " Order Status : COMPLETED & AUTHORIZED\n" +
+            "------------------------------------------------------------------------\n" +
+            " CUSTOMER DETAILS:\n" +
+            ` Name         : ${payload.name} (VIP Plus Member)\n` +
+            ` Email        : ${payload.email}\n` +
+            ` Shipping To  : ${payload.address}\n` +
+            "------------------------------------------------------------------------\n" +
+            " SKU        ITEM DESCRIPTION             QTY   UNIT PRICE   TOTAL       \n" +
+            "------------------------------------------------------------------------\n";
+
+        cart.items.forEach(it => {
+            let title = it.name.length > 27 ? it.name.substring(0, 24) + '...' : it.name.padEnd(27, ' ');
+            receiptText += ` ${it.productId.toString().padEnd(10, ' ')} ${title} ${it.quantity.toString().padEnd(5, ' ')} ${formatInr(it.basePrice).padEnd(12, ' ')} ${formatInr(it.lineTotal)}\n`;
+            if (it.hasBundleDiscount) {
+                receiptText += `            ↳ Bundle Deal (10% Off - Saved ${formatInr(it.bundleDiscountAmount)})\n`;
+            }
+        });
+
+        receiptText += "------------------------------------------------------------------------\n" +
+            ` Subtotal                                         : ${formatInr(cart.breakdown.subtotal)}\n`;
+        if (cart.breakdown.totalDiscount > 0) {
+            receiptText += ` Discounts & Offers Applied                       : -${formatInr(cart.breakdown.totalDiscount)} (${cart.breakdown.appliedCoupon || 'Bundle Deals'})\n`;
+        }
+        receiptText += ` Estimated GST (Itemized Category Tax)            : ${formatInr(cart.breakdown.taxTotal)}\n` +
+            ` Fulfillment & Express Delivery                   : ${cart.breakdown.shippingTotal === 0 ? 'FREE' : formatInr(cart.breakdown.shippingTotal)}\n` +
+            "========================================================================\n" +
+            ` TOTAL AMOUNT PAID                                : ${formatInr(cart.breakdown.grandTotal)} INR\n` +
+            "========================================================================\n" +
+            " PAYMENT VERIFICATION:\n" +
+            ` Payment Gateway  : ${payload.method}\n` +
+            ` Transaction Ref  : TXN-${Math.random().toString(36).substring(2, 12).toUpperCase()}\n` +
+            " Settlement Status: AUTHORIZED & CLEARED VIA SECURE GATEWAY\n" +
+            "========================================================================\n" +
+            "     Thank you for shopping with FlipMart! 100% Genuine Products.       \n" +
+            "        Support: support@flipmart.in | Helpline: 1800-208-9898          \n" +
+            "========================================================================\n";
+
+        this.clear();
+        return {
+            success: true,
+            orderId,
+            paymentMethod: payload.method,
+            receiptText
+        };
+    }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
@@ -86,7 +358,10 @@ function initEventListeners() {
     const clearCartBtn = document.getElementById('clearCartBtn');
     if (clearCartBtn) {
         clearCartBtn.addEventListener('click', async () => {
-            await fetch(`${API_BASE}/cart/clear`, { method: 'POST' });
+            try {
+                await fetch(`${API_BASE}/cart/clear`, { method: 'POST' });
+            } catch (_) {}
+            LocalCartEngine.clear();
             showToast('FlipMart cart cleared. Inventory restored.');
             refreshCart();
             fetchProducts();
@@ -114,14 +389,24 @@ function initEventListeners() {
     if (btnAddBundle) {
         btnAddBundle.addEventListener('click', async () => {
             if (!activeBundleRecommendation) return;
-            const res = await fetch(`${API_BASE}/cart/add`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productId: activeBundleRecommendation.recommendedId, quantity: 1, isBundle: true })
-            });
-            const data = await res.json();
+            let success = false;
+            try {
+                const res = await fetch(`${API_BASE}/cart/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productId: activeBundleRecommendation.recommendedId, quantity: 1, isBundle: true })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    success = data.success;
+                }
+            } catch (_) {}
+            if (!success) {
+                const data = LocalCartEngine.addItem(activeBundleRecommendation.recommendedId, 1, true);
+                success = data.success;
+            }
             closeModal('bundleModalBackdrop');
-            if (data.success) {
+            if (success) {
                 showToast(`Added bundle: ${activeBundleRecommendation.recommendedName} with 10% discount! 🎁`);
                 refreshCart();
                 fetchProducts();
@@ -233,15 +518,16 @@ async function fetchProducts() {
     try {
         let res = await fetch(`${API_BASE}/products`);
         if (!res.ok) {
-            // Fallback for static GitHub Pages hosting requiring .json extension
             res = await fetch(`${API_BASE}/products.json`);
         }
+        if (!res.ok) {
+            res = await fetch('api/products.json');
+        }
         allProducts = await res.json();
-        console.log(`Loaded ${allProducts.length} products from API`);
+        console.log(`Loaded ${allProducts.length} products`);
         renderProducts();
     } catch (e) {
         try {
-            // Secondary fallback for relative directory paths on GitHub Pages
             const relRes = await fetch('api/products.json');
             if (relRes.ok) {
                 allProducts = await relRes.json();
@@ -259,27 +545,26 @@ function resolveImageUrl(path, category) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
         return path;
     }
-    const cleanPath = path.startsWith('/') ? path : '/' + path;
-    if (window.location.protocol === 'file:') {
-        return 'http://localhost:8080' + cleanPath;
-    }
-    return cleanPath;
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return REPO_BASE + cleanPath;
 }
 
 function getCategoryFallbackUrl(category) {
+    let rel = 'assets/aurasound_headphones.png';
     switch (category) {
         case 'FASHION':
-            return '/assets/mens_slim_shirt.png';
+            rel = 'assets/mens_slim_shirt.png'; break;
         case 'HOME_KITCHEN':
-            return '/assets/electric_kettle.png';
+            rel = 'assets/electric_kettle.png'; break;
         case 'BOOKS_ESSENTIALS':
-            return '/assets/bestseller_books.png';
+            rel = 'assets/bestseller_books.png'; break;
         case 'DIGITAL':
-            return '/assets/devmaster_ide.png';
+            rel = 'assets/devmaster_ide.png'; break;
         case 'ELECTRONICS':
         default:
-            return '/assets/aurasound_headphones.png';
+            rel = 'assets/aurasound_headphones.png'; break;
     }
+    return REPO_BASE + rel;
 }
 
 function renderProducts() {
@@ -357,27 +642,34 @@ function renderProducts() {
 
 // --- ADD TO CART & BUY NOW ---
 async function addToCart(productId) {
+    let success = false;
+    let data = null;
     try {
         const res = await fetch(`${API_BASE}/cart/add`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId: productId, quantity: 1, isBundle: false })
         });
-        const data = await res.json();
-        if (data.success) {
-            showToast('Item added to FlipMart cart! 🛒');
-            refreshCart();
-            fetchProducts();
-
-            // Check if companion bundle recommended
-            if (data.bundleRecommendation) {
-                showBundleModal(data.bundleRecommendation);
-            }
-        } else {
-            showToast(data.message || 'Could not add item to cart.', 'error');
+        if (res.ok) {
+            data = await res.json();
+            success = data.success;
         }
-    } catch (e) {
-        console.error('Cart add error:', e);
+    } catch (_) {}
+
+    if (!success) {
+        data = LocalCartEngine.addItem(productId, 1, false);
+        success = data.success;
+    }
+
+    if (success) {
+        showToast('Item added to FlipMart cart! 🛒');
+        refreshCart();
+        fetchProducts();
+        if (data && data.bundleRecommendation) {
+            showBundleModal(data.bundleRecommendation);
+        }
+    } else {
+        showToast((data && data.message) || 'Could not add item to cart.', 'error');
     }
 }
 
@@ -404,104 +696,131 @@ function showBundleModal(rec) {
 
 // --- REFRESH CART CONTENT ---
 async function refreshCart() {
+    let cart = null;
     try {
         const res = await fetch(`${API_BASE}/cart`);
-        const cart = await res.json();
+        if (res.ok) {
+            cart = await res.json();
+        }
+    } catch (_) {}
 
-        // Update nav badge
-        const navCount = document.getElementById('navCartCount');
-        if (navCount) navCount.textContent = cart.totalItems;
+    if (!cart || !cart.items || (cart.items.length === 0 && LocalCartEngine.getItems().length > 0)) {
+        cart = LocalCartEngine.getCartState();
+    }
 
-        const navTotal = document.getElementById('navCartTotal');
-        if (navTotal) navTotal.textContent = formatInr(cart.breakdown.grandTotal);
+    renderCartUI(cart);
+}
 
-        const drawerCount = document.getElementById('drawerItemCount');
-        if (drawerCount) drawerCount.textContent = `(${cart.totalItems} item${cart.totalItems === 1 ? '' : 's'})`;
+function renderCartUI(cart) {
+    if (!cart) return;
 
-        const list = document.getElementById('drawerItemsList');
-        if (!list) return;
-        list.innerHTML = '';
+    // Update nav badge
+    const navCount = document.getElementById('navCartCount');
+    if (navCount) navCount.textContent = cart.totalItems;
 
-        if (cart.items.length === 0) {
-            list.innerHTML = `
-                <div class="empty-state">
-                    <span class="empty-icon">🛒</span>
-                    <h4>Your FlipMart cart is empty</h4>
-                    <p>Discover products in our catalog and add them to your cart!</p>
+    const navTotal = document.getElementById('navCartTotal');
+    if (navTotal) navTotal.textContent = formatInr(cart.breakdown.grandTotal);
+
+    const drawerCount = document.getElementById('drawerItemCount');
+    if (drawerCount) drawerCount.textContent = `(${cart.totalItems} item${cart.totalItems === 1 ? '' : 's'})`;
+
+    const list = document.getElementById('drawerItemsList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (cart.items.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-icon">🛒</span>
+                <h4>Your FlipMart cart is empty</h4>
+                <p>Discover products in our catalog and add them to your cart!</p>
+            </div>
+        `;
+        const btnOpenCo = document.getElementById('btnOpenCheckout');
+        if (btnOpenCo) btnOpenCo.disabled = true;
+    } else {
+        const btnOpenCo = document.getElementById('btnOpenCheckout');
+        if (btnOpenCo) btnOpenCo.disabled = false;
+
+        cart.items.forEach(it => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'cart-item-card';
+            const itemImgUrl = resolveImageUrl(it.imagePath, it.category);
+            const itemFallbackUrl = getCategoryFallbackUrl(it.category);
+            itemDiv.innerHTML = `
+                <img class="item-thumb" src="${itemImgUrl}" alt="${it.name}" onerror="this.onerror=null; this.src='${itemFallbackUrl}';">
+                <div class="item-info">
+                    <div class="item-name">${it.name}</div>
+                    <div class="item-price-meta">${formatInr(it.basePrice)} each</div>
+                    ${it.hasBundleDiscount ? `<span class="item-bundle-tag">🔥 10% Bundle Discount</span>` : ''}
                 </div>
+                <div class="item-controls">
+                    <button class="stepper-btn" onclick="updateItemQty('${it.productId}', 'decrement')">-</button>
+                    <span class="item-qty">${it.quantity}</span>
+                    <button class="stepper-btn" onclick="updateItemQty('${it.productId}', 'increment')">+</button>
+                </div>
+                <div class="item-line-total">${formatInr(it.lineTotal)}</div>
+                <button class="btn-trash" onclick="removeItem('${it.productId}')">🗑</button>
             `;
-            const btnOpenCo = document.getElementById('btnOpenCheckout');
-            if (btnOpenCo) btnOpenCo.disabled = true;
-        } else {
-            const btnOpenCo = document.getElementById('btnOpenCheckout');
-            if (btnOpenCo) btnOpenCo.disabled = false;
+            list.appendChild(itemDiv);
+        });
+    }
 
-            cart.items.forEach(it => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'cart-item-card';
-                const itemImgUrl = resolveImageUrl(it.imagePath, it.category);
-                const itemFallbackUrl = getCategoryFallbackUrl(it.category);
-                itemDiv.innerHTML = `
-                    <img class="item-thumb" src="${itemImgUrl}" alt="${it.name}" onerror="this.onerror=null; this.src='${itemFallbackUrl}';">
-                    <div class="item-info">
-                        <div class="item-name">${it.name}</div>
-                        <div class="item-price-meta">${formatInr(it.basePrice)} each</div>
-                        ${it.hasBundleDiscount ? `<span class="item-bundle-tag">🔥 10% Bundle Discount</span>` : ''}
-                    </div>
-                    <div class="item-controls">
-                        <button class="stepper-btn" onclick="updateItemQty('${it.productId}', 'decrement')">-</button>
-                        <span class="item-qty">${it.quantity}</span>
-                        <button class="stepper-btn" onclick="updateItemQty('${it.productId}', 'increment')">+</button>
-                    </div>
-                    <div class="item-line-total">${formatInr(it.lineTotal)}</div>
-                    <button class="btn-trash" onclick="removeItem('${it.productId}')">🗑</button>
-                `;
-                list.appendChild(itemDiv);
-            });
-        }
+    // Breakdown card in Rupees
+    const b = cart.breakdown;
+    document.getElementById('bdSubtotal').textContent = formatInr(b.subtotal);
+    document.getElementById('bdDiscounts').textContent = `-${formatInr(b.totalDiscount)}`;
+    document.getElementById('bdTax').textContent = formatInr(b.taxTotal);
+    document.getElementById('bdShipping').textContent = b.shippingTotal === 0 ? 'FREE' : formatInr(b.shippingTotal);
+    document.getElementById('bdGrandTotal').textContent = formatInr(b.grandTotal);
+    document.getElementById('checkoutBtnTotal').textContent = formatInr(b.grandTotal);
 
-        // Breakdown card in Rupees
-        const b = cart.breakdown;
-        document.getElementById('bdSubtotal').textContent = formatInr(b.subtotal);
-        document.getElementById('bdDiscounts').textContent = `-${formatInr(b.totalDiscount)}`;
-        document.getElementById('bdTax').textContent = formatInr(b.taxTotal);
-        document.getElementById('bdShipping').textContent = b.shippingTotal === 0 ? 'FREE' : formatInr(b.shippingTotal);
-        document.getElementById('bdGrandTotal').textContent = formatInr(b.grandTotal);
-        document.getElementById('checkoutBtnTotal').textContent = formatInr(b.grandTotal);
-
-        // Coupon display
-        const fb = document.getElementById('couponFeedback');
-        if (b.appliedCoupon && b.appliedCoupon !== 'null') {
-            fb.className = 'coupon-feedback success';
-            fb.innerHTML = `✓ Active Coupon: <strong>${b.appliedCoupon}</strong> (-${formatInr(b.couponDiscount)}) <a href="#" onclick="removeCoupon(); return false;" style="color:#ef4444; margin-left:8px;">[Remove]</a>`;
-        } else {
-            fb.innerHTML = '';
-        }
-    } catch (e) {
-        console.error('Error refreshing cart:', e);
+    // Coupon display
+    const fb = document.getElementById('couponFeedback');
+    if (b.appliedCoupon && b.appliedCoupon !== 'null') {
+        fb.className = 'coupon-feedback success';
+        fb.innerHTML = `✓ Active Coupon: <strong>${b.appliedCoupon}</strong> (-${formatInr(b.couponDiscount)}) <a href="#" onclick="removeCoupon(); return false;" style="color:#ef4444; margin-left:8px;">[Remove]</a>`;
+    } else {
+        fb.innerHTML = '';
     }
 }
 
 async function updateItemQty(productId, action) {
-    const res = await fetch(`${API_BASE}/cart/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, action })
-    });
-    const data = await res.json();
-    if (!data.success && action === 'increment') {
-        showToast('Reached maximum available stock!', 'error');
+    let handled = false;
+    try {
+        const res = await fetch(`${API_BASE}/cart/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId, action })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            handled = true;
+            if (!data.success && action === 'increment') {
+                showToast('Reached maximum available stock!', 'error');
+            }
+        }
+    } catch (_) {}
+
+    if (!handled) {
+        const res = LocalCartEngine.updateQuantity(productId, action);
+        if (!res.success && action === 'increment') {
+            showToast('Reached maximum available stock!', 'error');
+        }
     }
     refreshCart();
     fetchProducts();
 }
 
 async function removeItem(productId) {
-    await fetch(`${API_BASE}/cart/remove`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId })
-    });
+    try {
+        await fetch(`${API_BASE}/cart/remove`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId })
+        });
+    } catch (_) {}
+    LocalCartEngine.removeItem(productId);
     showToast('Item removed from cart.');
     refreshCart();
     fetchProducts();
@@ -509,26 +828,47 @@ async function removeItem(productId) {
 
 async function applyPromoDirectly(code) {
     document.getElementById('promoInput').value = code;
-    const res = await fetch(`${API_BASE}/cart/coupon`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code })
-    });
-    const data = await res.json();
+    let handled = false;
     const fb = document.getElementById('couponFeedback');
-    if (data.success) {
-        fb.className = 'coupon-feedback success';
-        fb.textContent = `✓ Coupon "${code}" applied successfully!`;
-        showToast(`Promo ${code} applied! 🎉`);
-    } else {
-        fb.className = 'coupon-feedback error';
-        fb.textContent = `⚠ ${data.message}`;
+    try {
+        const res = await fetch(`${API_BASE}/cart/coupon`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            handled = true;
+            if (data.success) {
+                fb.className = 'coupon-feedback success';
+                fb.textContent = `✓ Coupon "${code}" applied successfully!`;
+                showToast(`Promo ${code} applied! 🎉`);
+            } else {
+                fb.className = 'coupon-feedback error';
+                fb.textContent = `⚠ ${data.message}`;
+            }
+        }
+    } catch (_) {}
+
+    if (!handled) {
+        const data = LocalCartEngine.applyCoupon(code);
+        if (data.success) {
+            fb.className = 'coupon-feedback success';
+            fb.textContent = `✓ Coupon "${code}" applied successfully!`;
+            showToast(`Promo ${code} applied! 🎉`);
+        } else {
+            fb.className = 'coupon-feedback error';
+            fb.textContent = `⚠ ${data.message}`;
+        }
     }
     refreshCart();
 }
 
 async function removeCoupon() {
-    await fetch(`${API_BASE}/cart/remove-coupon`, { method: 'POST' });
+    try {
+        await fetch(`${API_BASE}/cart/remove-coupon`, { method: 'POST' });
+    } catch (_) {}
+    LocalCartEngine.removeCoupon();
     document.getElementById('couponFeedback').innerHTML = '';
     showToast('Coupon removed.');
     refreshCart();
@@ -586,9 +926,18 @@ function openQuickView(productId) {
 // --- CHECKOUT & RECEIPT ---
 async function openCheckoutModal() {
     closeCartDrawer();
-    const res = await fetch(`${API_BASE}/cart`);
-    const cart = await res.json();
-    if (cart.items.length === 0) return;
+    let cart = null;
+    try {
+        const res = await fetch(`${API_BASE}/cart`);
+        if (res.ok) cart = await res.json();
+    } catch (_) {}
+    if (!cart || !cart.items || cart.items.length === 0) {
+        cart = LocalCartEngine.getCartState();
+    }
+    if (cart.items.length === 0) {
+        showToast('Cart is empty. Add items to proceed.', 'error');
+        return;
+    }
 
     // Render summary items
     const list = document.getElementById('checkoutItemsList');
@@ -617,12 +966,12 @@ async function openCheckoutModal() {
     document.getElementById('coTax').textContent = formatInr(b.taxTotal);
     document.getElementById('coShipping').textContent = b.shippingTotal === 0 ? 'FREE' : formatInr(b.shippingTotal);
     document.getElementById('coGrand').textContent = formatInr(b.grandTotal);
-    
+
     const btnSubmit = document.getElementById('btnSubmitOrder');
     if (btnSubmit) {
         btnSubmit.innerHTML = `<span class="btn-lock-icon">🔒</span><span>Confirm & Pay ${formatInr(b.grandTotal)}</span><span class="btn-arrow-icon">➔</span>`;
     }
-    
+
     document.getElementById('checkoutError').textContent = '';
 
     // Synchronize payment tabs and active form
@@ -686,26 +1035,34 @@ async function handleOrderSubmission() {
         return;
     }
 
+    let handled = false;
+    let data = null;
     try {
         const res = await fetch(`${API_BASE}/checkout`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        if (!data.success) {
-            errDiv.textContent = `⚠ ${data.message}`;
-        } else {
-            closeModal('checkoutBackdrop');
-            lastConfirmedReceipt = data.receiptText;
-            document.getElementById('receiptSubText').textContent = `Order Ref: ${data.orderId} • Paid via ${data.paymentMethod}`;
-            document.getElementById('receiptContent').textContent = data.receiptText;
-            openModal('receiptBackdrop');
-            refreshCart();
-            fetchProducts();
+        if (res.ok) {
+            data = await res.json();
+            handled = true;
         }
-    } catch (e) {
-        errDiv.textContent = 'Connection error during payment processing.';
+    } catch (_) {}
+
+    if (!handled) {
+        data = LocalCartEngine.checkout(payload);
+    }
+
+    if (!data || !data.success) {
+        errDiv.textContent = `⚠ ${(data && data.message) || 'Error during payment processing.'}`;
+    } else {
+        closeModal('checkoutBackdrop');
+        lastConfirmedReceipt = data.receiptText;
+        document.getElementById('receiptSubText').textContent = `Order Ref: ${data.orderId} • Paid via ${data.paymentMethod}`;
+        document.getElementById('receiptContent').textContent = data.receiptText;
+        openModal('receiptBackdrop');
+        refreshCart();
+        fetchProducts();
     }
 }
 

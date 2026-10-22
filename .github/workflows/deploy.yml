@@ -133,7 +133,17 @@ jobs:
           # Spin up background server to capture live API responses
           java -cp bin com.shoppingcart.web.WebServer &
           SERVER_PID=$!
-          sleep 3
+          echo "WebServer PID: $SERVER_PID"
+
+          # Healthcheck polling loop (up to 20 seconds)
+          for i in {1..20}; do
+            if curl -s -f http://localhost:8080/api/products > /dev/null; then
+              echo "✅ WebServer is live and responding!"
+              break
+            fi
+            echo "Waiting for server to start (attempt $i)..."
+            sleep 1
+          done
 
           # Capture snapshot of endpoints for static GitHub Pages hosting
           echo "Capturing API snapshots..."
@@ -147,6 +157,7 @@ jobs:
           # Assemble web frontend assets
           cp -r web/* public/
           cp -r assets/* public/assets/
+          touch public/.nojekyll
           echo "Public directory contents:"
           ls -la public/
           echo "API snapshots in public/api:"
