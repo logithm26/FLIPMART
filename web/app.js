@@ -231,11 +231,24 @@ function selectBank(btn, name) {
 // --- FETCH & RENDER PRODUCTS ---
 async function fetchProducts() {
     try {
-        const res = await fetch(`${API_BASE}/products`);
+        let res = await fetch(`${API_BASE}/products`);
+        if (!res.ok) {
+            // Fallback for static GitHub Pages hosting requiring .json extension
+            res = await fetch(`${API_BASE}/products.json`);
+        }
         allProducts = await res.json();
-        console.log(`Loaded ${allProducts.length} products from ${API_BASE}/products`);
+        console.log(`Loaded ${allProducts.length} products from API`);
         renderProducts();
     } catch (e) {
+        try {
+            // Secondary fallback for relative directory paths on GitHub Pages
+            const relRes = await fetch('api/products.json');
+            if (relRes.ok) {
+                allProducts = await relRes.json();
+                renderProducts();
+                return;
+            }
+        } catch (_) {}
         console.error('Error fetching products:', e);
     }
 }

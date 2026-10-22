@@ -1,5 +1,7 @@
 # FlipMart - Modern Consumer-Grade Java Desktop E-Commerce Experience
 
+[![Build and Deploy FlipMart](https://github.com/logithm26/FLIPMART/actions/workflows/deploy.yml/badge.svg)](https://github.com/logithm26/FLIPMART/actions/workflows/deploy.yml)
+
 A flagship, consumer-grade desktop e-commerce application built in **Java (JDK 17+/26)** inspired by the industry-leading UI/UX design patterns of **Flipkart**, **Amazon**, and **Meesho**. Features a crisp Flipkart Royal Blue sticky navigation bar, pill search with real-time keystroke filtering, quick-scroll category chips, clean white product cards with green rating chips, genuine high-resolution CDN photography loaded asynchronously via `SwingWorker`, a live slide-out cart drawer with stepper buttons, and an intuitive 3-step checkout and payment simulation.
 
 ---

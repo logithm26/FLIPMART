@@ -1,0 +1,162 @@
+name: Build and Deploy FlipMart
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-test:
+    name: 🔨 Build & Verify Architecture
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: ⚙️ Compile Java Codebase
+        run: |
+          echo "Compiling all Java source files..."
+          mkdir -p bin
+          find src -name "*.java" > sources.txt
+          javac -d bin -sourcepath src @sources.txt
+          echo "Compilation successful: $(find bin -name "*.class" | wc -l) classes generated."
+
+      - name: 🧪 Run Architecture & OOP Verification Suite
+        run: |
+          echo "Running Architecture Verification Test..."
+          java -Djava.awt.headless=true -ea -cp bin com.shoppingcart.test.ArchitectureVerificationTest
+
+      - name: 🧪 Run UI/UX Catalog & Async Image Verification Suite
+        run: |
+          echo "Running UI/UX & Catalog Verification Test..."
+          java -Djava.awt.headless=true -ea -cp bin com.shoppingcart.test.CatalogAndAsyncImageTest
+
+      - name: 🚀 Validate Backend REST API & Integration Probe
+        run: |
+          echo "Starting FlipMart WebServer daemon on port 8080..."
+          java -cp bin com.shoppingcart.web.WebServer &
+          SERVER_PID=$!
+          echo "WebServer PID: $SERVER_PID"
+
+          # Healthcheck polling loop (up to 15 seconds)
+          for i in {1..15}; do
+            if curl -s -f http://localhost:8080/api/products > /dev/null; then
+              echo "✅ WebServer is live and responding!"
+              break
+            fi
+            echo "Waiting for server to start (attempt $i)..."
+            sleep 1
+          done
+
+          # Probe /api/products endpoint
+          echo "Testing /api/products response..."
+          PRODUCTS_COUNT=$(curl -s http://localhost:8080/api/products | grep -o '"id":' | wc -l)
+          echo "Total products retrieved from REST API: $PRODUCTS_COUNT"
+          if [ "$PRODUCTS_COUNT" -lt 50 ]; then
+            echo "❌ Error: Expected at least 50 products in catalog, got $PRODUCTS_COUNT"
+            kill -9 $SERVER_PID || true
+            exit 1
+          fi
+
+          # Probe /api/cart endpoint
+          echo "Testing /api/cart response..."
+          curl -s -f http://localhost:8080/api/cart | grep -q '"totalItems":0'
+          echo "✅ Cart API validated successfully."
+
+          # Cleanly terminate test server
+          kill -9 $SERVER_PID || true
+          echo "Backend integration probe completed successfully."
+
+      - name: 📦 Package Standalone Executable JAR
+        run: |
+          echo "Packaging FlipMart executable JAR..."
+          mkdir -p dist
+          jar cfe dist/FlipMart.jar com.shoppingcart.Main -C bin .
+          cp -r assets dist/
+          cp -r web dist/
+          cp README.md dist/
+          cp run.bat run.ps1 run_web.bat dist/
+          echo "Distribution build complete. JAR size: $(du -h dist/FlipMart.jar | cut -f1)"
+
+      - name: 📤 Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: flipmart-distribution-bundle
+          path: dist/
+          retention-days: 30
+
+  deploy-web:
+    name: 🌐 Deploy Frontend UI & API to GitHub Pages
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: ⚙️ Compile & Snapshot Backend REST API for Web Hosting
+        run: |
+          mkdir -p bin public/api public/assets
+          find src -name "*.java" > sources.txt
+          javac -d bin -sourcepath src @sources.txt
+
+          # Spin up background server to capture live API responses
+          java -cp bin com.shoppingcart.web.WebServer &
+          SERVER_PID=$!
+          sleep 3
+
+          # Capture snapshot of endpoints for static GitHub Pages hosting
+          echo "Capturing API snapshots..."
+          curl -s http://localhost:8080/api/products > public/api/products
+          curl -s http://localhost:8080/api/products > public/api/products.json
+          curl -s http://localhost:8080/api/cart > public/api/cart
+          curl -s http://localhost:8080/api/cart > public/api/cart.json
+
+          kill -9 $SERVER_PID || true
+
+          # Assemble web frontend assets
+          cp -r web/* public/
+          cp -r assets/* public/assets/
+          echo "Public directory contents:"
+          ls -la public/
+          echo "API snapshots in public/api:"
+          ls -la public/api/
+
+      - name: 📤 Configure & Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -19,3 +19,5 @@ Desktop.ini
 # Temporary log files
 *.log
 scratch/
+receipts/
+dist/
